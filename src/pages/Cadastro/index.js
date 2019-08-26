@@ -1,5 +1,7 @@
 import React, {useState} from 'react';
+import {ToastAndroid} from 'react-native';
 import ImagePicker from 'react-native-image-picker';
+import offFirst from '../../services/offfirst';
 
 import {
   Container,
@@ -12,12 +14,12 @@ import {
 } from './styles';
 
 export default function Cadastro({navigation}) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [quantidade, setQuantidade] = useState('');
-  const [preco, setPreco] = useState('');
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const {produto = {}} = navigation.state.params;
+  const [name, setName] = useState(produto.name || '');
+  const [description, setDescription] = useState(produto.description || '');
+  const [amount, setAmount] = useState(produto.amount || '');
+  const [price, setPrice] = useState(produto.price || '');
+  const [image, setImage] = useState(produto.image || null);
 
   function handleSelectimage() {
     ImagePicker.showImagePicker(
@@ -30,36 +32,39 @@ export default function Cadastro({navigation}) {
         } else if (upload.didCancel) {
           console.log('Used canceled');
         } else {
-          const preview = {
-            uri: `data:image/jpeg;base64,${upload.data}`,
-          };
-
-          let prefix;
-          let ext;
-
-          if (upload.fileName) {
-            [prefix, ext] = upload.fileName.split('.');
-            ext = ext.toLowerCase() === 'heic' ? 'jpg' : ext;
-          } else {
-            prefix = new Date().getTime();
-            ext = 'jpg';
-          }
-
-          const image = {
-            uri: upload.uri,
-            type: upload.type,
-            name: `${prefix}.${ext}`,
-          };
-
-          setImage(image);
-          setPreview(preview);
+          setImage(`data:image/jpeg;base64,${upload.data}`);
         }
       },
     );
   }
 
   async function handleSubmit() {
-    console.log('submitando');
+    if (!name || !description || !amount || !price || !image) {
+      ToastAndroid.show(
+        'Preencha todos os campos para salvar!',
+        ToastAndroid.LONG,
+      );
+      return;
+    }
+
+    const result = await offFirst('produtos', 'add', {
+      name,
+      description,
+      amount,
+      price,
+      image,
+    });
+    if (result) {
+      setName('');
+      setDescription('');
+      setAmount('');
+      setPrice('');
+      setImage(null);
+      navigation.state.params.refresh(result);
+      navigation.goBack();
+    } else {
+      ToastAndroid.show('Um erro ocorreu ao tentar salvar!', ToastAndroid.LONG);
+    }
   }
 
   return (
@@ -68,7 +73,7 @@ export default function Cadastro({navigation}) {
         <SelectButtonText>Selecionar imagem</SelectButtonText>
       </SelectButton>
 
-      {preview && <Preview source={preview} />}
+      {image && <Preview source={{uri: image}} />}
 
       <Input
         autoCorrect={false}
@@ -90,16 +95,16 @@ export default function Cadastro({navigation}) {
         keyboardType="numeric"
         placeholder="Quantidade"
         placeholderTextColor="#999"
-        value={quantidade}
-        onChangeText={quantidade => setQuantidade(quantidade)}
+        value={amount}
+        onChangeText={amount => setAmount(amount)}
       />
 
       <Input
         keyboardType="numeric"
         placeholder="Preço"
         placeholderTextColor="#999"
-        value={preco}
-        onChangeText={preco => setPreco(preco)}
+        value={price}
+        onChangeText={price => setPrice(price)}
       />
 
       <ShareButton onPress={handleSubmit}>

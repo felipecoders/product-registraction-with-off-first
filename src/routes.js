@@ -13,7 +13,7 @@ const Routes = createAppContainer(
       Cadastro,
     },
     {
-      initialRouteName: 'Cadastro',
+      initialRouteName: 'Main',
       defaultNavigationOptions: {
         headerTintColor: '#000',
         headerTitle: 'Minha empresa',
